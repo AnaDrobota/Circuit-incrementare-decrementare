@@ -1,0 +1,130 @@
+--fisier pt package 
+library IEEE; 
+use IEEE.std_logic_1164.all; 
+use ieee.numeric_std.all; 
+package CIRCUIT is 
+function Increment ( A :std_logic_vector) return std_logic_vector; 
+function Decrement ( A : std_logic_vector ) return std_logic_vector; 
+end CIRCUIT; 
+package body CIRCUIT is  
+function Increment ( A : std_logic_vector ) return std_logic_vector is 
+begin  
+return std_logic_vector(unsigned( A)+1); 
+end; 
+function Decrement ( A : std_logic_vector ) return std_logic_vector is  
+begin  
+return std_logic_vector(unsigned( A)-1); 
+end; 
+end CIRCUIT; -- fisier pt declaratia de model 
+library ieee; 
+use ieee.std_logic_1164.all; 
+use ieee.numeric_std.all; 
+use work.Increment_Decrement.all; 
+entity CIRC_INC_DEC is 
+generic ( 
+width : Natural := 8); 
+port ( 
+A        
+: in  std_logic_vector(width - 1 downto 0); 
+INC_DEC  : in  std_logic; 
+EN       : in  std_logic; 
+CLK     
+ : in  std_logic; 
+OEB      
+: in  std_logic; 
+SUM      : out std_logic_vector(width - 1 downto 0); 
+C        
+: out std_logic 
+); 
+end entity CIRC_INC_DEC; 
+ 
+architecture behavioral of CIRC_INC_DEC is 
+  
+signal MAX_VALUE  : std_logic_vector(width - 1 downto 0) := "11111111"; 
+begin 
+ process(CLK) 
+  variable intermediate_unsigned : unsigned(width - 1 downto 0); 
+begin 
+  if rising_edge(CLK) then 
+    if EN = '1' then 
+      if OEB = '0' then 
+        if INC_DEC = '0' then 
+          intermediate_unsigned := unsigned(increment(A)); 
+    
+        else 
+          intermediate_unsigned := unsigned(decrement(A)); 
+        end if; 
+        if intermediate_unsigned > unsigned(MAX_VALUE) or intermediate_unsigned < 0 then 
+          C <= '1'; 
+          SUM <= ("00000000"); 
+        else 
+          C <= '0'; 
+          SUM <= std_logic_vector(intermediate_unsigned); 
+        end if; 
+      else 
+        C <= 'Z'; 
+        SUM <= (others => 'Z'); 
+      end if; 
+    else 
+      C <= 'Z'; 
+      SUM <= (others => 'Z'); 
+    end if; 
+  end if; 
+end process; 
+ 
+end architecture behavioral; 
+ 
+ --fisier pentru entitatea de test 
+ 
+library IEEE; 
+use IEEE.std_logic_1164.all; 
+use IEEE.numeric_std.all; 
+use work.Increment_Decrement.all ; 
+ 
+entity Test_INC_DEC is end; 
+architecture Driver of Test_INC_DEC is 
+ 
+ component CIRC_INC_DEC  
+ generic (width : Natural :=8); 
+ port( A: in std_logic_vector(width-1 downto 0); 
+       INC_DEC, EN, CLK, OEB : in std_logic; 
+       C: out std_logic; 
+          SUM: out std_logic_vector(width-1 downto  0)); 
+ end component; 
+ 
+ signal A: std_logic_vector (8-1 downto 0):="00001000"; 
+ signal MAX: std_logic_vector (8-1 downto 0) :="11111101"; 
+ signal EN, OEB,CLK, INC_DEC: std_logic; 
+ signal C: std_logic;  
+ signal SUM : std_logic_vector(8-1 downto 0); 
+  
+begin 
+ U1: CIRC_INC_DEC port map (A, INC_DEC, EN, CLK, OEB, C, SUM); 
+ process  
+   
+ begin 
+  CLK<='0', '1' after 1ns;  
+  wait for 5 ns; 
+  CLK<= '1', '0' after 1ns; 
+  wait for 5ns; 
+ end process; 
+process 
+ 
+  begin 
+  INC_DEC<='0'; wait for 10 ns; 
+  INC_DEC<='1'; wait for 10 ns; 
+ end process; 
+ 
+ process 
+  begin 
+  OEB<= '0'; wait for 40ns; 
+  OEB<='1', '0' after 4ns; 
+  wait; 
+ end process; 
+ process 
+  begin 
+  EN<='1'; wait for 20 ns; 
+  EN<= '0', '1' after 5ns; 
+  wait for 40 ns; 
+ end process; 
+end;
